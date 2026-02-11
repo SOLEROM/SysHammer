@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Fake hcitool for testing
+if [[ "${1:-}" == "dev" ]]; then
+    echo "Devices:"
+    echo "	hci0	AA:BB:CC:DD:EE:FF"
+    exit 0
+fi
+
+if [[ "${1:-}" == "lescan" ]]; then
+    echo "LE Scan ..."
+    echo "AA:BB:CC:DD:EE:01 TestDevice1"
+    echo "AA:BB:CC:DD:EE:02 TestDevice2"
+    exit 0
+fi
+
+exit 0

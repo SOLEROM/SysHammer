@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Fake iw for testing
+if [[ "${1:-}" == "--version" ]]; then
+    echo "iw version 5.19"
+    exit 0
+fi
+
+if [[ "$*" == *"link"* ]]; then
+    echo "Connected to aa:bb:cc:dd:ee:ff (on wlan0)"
+    echo "	SSID: TestNetwork"
+    echo "	freq: 5180"
+    echo "	signal: -55 dBm"
+    echo "	tx bitrate: 866.7 MBit/s"
+fi
+
+exit 0

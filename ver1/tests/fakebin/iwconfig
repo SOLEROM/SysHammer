@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Fake iwconfig for testing
+echo "wlan0     IEEE 802.11  ESSID:\"TestNetwork\""
+echo "          Mode:Managed  Frequency:5.18 GHz  Access Point: AA:BB:CC:DD:EE:FF"
+echo "          Bit Rate=866.7 Mb/s   Tx-Power=20 dBm"
+echo "          Link Quality=70/70  Signal level=-40 dBm"
+exit 0

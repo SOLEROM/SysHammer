@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Fake spidev_test for testing
+: "${FAKE_SPIDEV_EXIT:=0}"
+
+echo "spi mode: 0x0"
+echo "bits per word: 8"
+echo "max speed: 1000000 Hz"
+echo "TX: 55 AA"
+echo "RX: 55 AA"
+exit "${FAKE_SPIDEV_EXIT}"

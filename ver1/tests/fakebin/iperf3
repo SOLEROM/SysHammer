@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Fake iperf3 for testing
+: "${FAKE_IPERF3_EXIT:=0}"
+
+if [[ "${1:-}" == "--version" ]]; then
+    echo "iperf 3.16"
+    exit 0
+fi
+
+echo "Connecting to host ${4:-server}, port 5201"
+echo "[  5]   0.00-1.00   sec  112 MBytes  940 Mbits/sec"
+echo "[  5]   1.00-2.00   sec  112 MBytes  941 Mbits/sec"
+sleep 0.1
+exit "${FAKE_IPERF3_EXIT}"

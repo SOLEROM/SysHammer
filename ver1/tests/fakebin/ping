@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Fake ping for testing
+: "${FAKE_PING_LOSS:=0}"
+
+if [[ "${1:-}" == "-V" ]]; then
+    echo "ping from iputils 20211215"
+    exit 0
+fi
+
+# Parse count from args
+count=5
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -c) count="$2"; shift 2 ;;
+        *)  shift ;;
+    esac
+done
+
+echo "PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data."
+local_count=$((count > 3 ? 3 : count))
+for ((i=1; i<=local_count; i++)); do
+    echo "64 bytes from 8.8.8.8: icmp_seq=$i ttl=118 time=1.23 ms"
+done
+echo ""
+echo "--- 8.8.8.8 ping statistics ---"
+echo "$count packets transmitted, $((count * (100 - FAKE_PING_LOSS) / 100)) received, ${FAKE_PING_LOSS}% packet loss, time ${count}000ms"
+echo "rtt min/avg/max/mdev = 1.100/1.230/1.400/0.100 ms"
+exit 0

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Fake stress-ng for testing
+: "${FAKE_STRESSNG_EXIT:=0}"
+: "${FAKE_STRESSNG_OUTPUT:=}"
+
+if [[ "${1:-}" == "--version" ]]; then
+    echo "stress-ng, version 0.17.08"
+    exit 0
+fi
+
+echo "stress-ng: info:  [$$] dispatching hogs"
+echo "stress-ng: info:  [$$] args: $*"
+
+if [[ -n "$FAKE_STRESSNG_OUTPUT" ]]; then
+    echo "$FAKE_STRESSNG_OUTPUT"
+fi
+
+# Simulate brief run
+sleep 0.1
+
+echo "stress-ng: info:  [$$] successful run completed"
+exit "${FAKE_STRESSNG_EXIT}"

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Fake ip for testing
+if [[ "${1:-}" == "link" ]]; then
+    echo "2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT"
+    echo "    link/ether aa:bb:cc:dd:ee:ff brd ff:ff:ff:ff:ff:ff"
+fi
+exit 0

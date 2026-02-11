@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Fake ethtool for testing
+if [[ "${1:-}" == "--version" ]]; then
+    echo "ethtool version 6.1"
+    exit 0
+fi
+
+echo "Settings for eth0:"
+echo "	Speed: 1000Mb/s"
+echo "	Duplex: Full"
+echo "	Link detected: yes"
+exit 0

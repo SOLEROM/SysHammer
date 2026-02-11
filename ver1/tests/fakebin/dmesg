@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Fake dmesg for testing
+: "${FAKE_DMESG_OUTPUT:=}"
+
+echo "[    0.000000] Linux version 5.15.0 (gcc 12.2.0)"
+echo "[    1.234567] Machine model: Test Board"
+
+if [[ -n "$FAKE_DMESG_OUTPUT" ]]; then
+    echo "$FAKE_DMESG_OUTPUT"
+fi
+
+exit 0

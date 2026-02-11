@@ -1,0 +1,7 @@
+#
+
+* idea from https://github.com/TinkerBoard/rockchip-linux-rockchip-test
+
+
+## tdd
+The benchmark tool is a Bash-based CLI orchestrator that executes external system utilities according to scenario configuration files and collects structured results. The TDD strategy is to separate pure logic from side effects and validate behavior in three layers. First, implement fast unit-style tests for configuration parsing, scenario expansion, argument construction, and result formatting using a shell test framework such as bats, shunit2, or shellspec; these tests must not execute real system tools and must mock time, filesystem paths, and environment variables. Second, implement integration tests using stub executables placed earlier in PATH to simulate tools like iperf3 or stress-ng, returning controlled stdout, stderr, exit codes, delays, and failure modes in order to validate timeout handling, retries, log capture, streaming parsing, and threshold logic deterministically. Third, maintain a limited end-to-end test suite that runs real tools inside a controlled Linux container or VM matching the target distribution to validate actual tool invocation and parsing behavior. All outputs must be machine-readable JSON so golden-file comparison can be used for regression detection. The CI pipeline should execute unit and stub-based integration tests on every commit and run real-tool tests periodically or on protected branches, and an additional arm64 emulated job should validate portability of scripts and external tool assumptions.

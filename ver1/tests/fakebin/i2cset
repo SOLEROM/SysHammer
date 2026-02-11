@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Fake i2cset for testing
+: "${FAKE_I2CSET_EXIT:=0}"
+
+if [[ "${1:-}" == "-V" ]]; then
+    echo "i2cset version 4.3"
+    exit 0
+fi
+
+exit "${FAKE_I2CSET_EXIT}"

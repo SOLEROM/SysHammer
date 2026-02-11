@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Fake bluetoothctl for testing
+echo "[bluetooth]# scan on"
+echo "Discovery started"
+echo "[NEW] Device AA:BB:CC:DD:EE:01 TestDevice1"
+exit 0

@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+# syshammer - Config-driven stress/validation orchestrator for embedded Linux
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source all libraries
+source "$SCRIPT_DIR/lib/common.sh"
+source "$SCRIPT_DIR/lib/config.sh"
+source "$SCRIPT_DIR/lib/plan.sh"
+source "$SCRIPT_DIR/lib/platform.sh"
+source "$SCRIPT_DIR/lib/tools.sh"
+source "$SCRIPT_DIR/lib/runner.sh"
+source "$SCRIPT_DIR/lib/sampler.sh"
+source "$SCRIPT_DIR/lib/scoring.sh"
+source "$SCRIPT_DIR/lib/report.sh"
+source "$SCRIPT_DIR/lib/cleanup.sh"
+
+MODULE_DIR="$SCRIPT_DIR/modules"
+
+# --- CLI Argument Parsing ---
+CONFIG_FILE=""
+OUT_DIR=""
+TAG=""
+DEBUG=0
+NO_REPORT=0
+KEEP=0
+
+usage() {
+    cat <<EOF
+Usage: syshammer --config <path> [--out <path>] [--tag <str>] [--debug] [--no-report] [--keep]
+
+Options:
+  --config <path>   Config file (required)
+  --out <path>      Output directory (default: ./runs/<run_id>/)
+  --tag <str>       Tag included in run id and metadata
+  --debug           Enable debug mode (verbose logging, full log embedding)
+  --no-report       Skip HTML report generation
+  --keep            Retain intermediate artifacts
+  --help            Show this help
+EOF
+    exit 0
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --config)  CONFIG_FILE="$2"; shift 2 ;;
+        --out)     OUT_DIR="$2"; shift 2 ;;
+        --tag)     TAG="$2"; shift 2 ;;
+        --debug)   DEBUG=1; shift ;;
+        --no-report) NO_REPORT=1; shift ;;
+        --keep)    KEEP=1; shift ;;
+        --help)    usage ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage
+            ;;
+    esac
+done
+
+if [[ -z "$CONFIG_FILE" ]]; then
+    echo "Error: --config is required" >&2
+    usage
+fi
+
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "Error: Config file not found: $CONFIG_FILE" >&2
+    exit 1
+fi
+
+export DEBUG
+
+# --- Generate Run ID ---
+_ts=$(date '+%Y%m%d_%H%M%S')
+_rand=$(head -c 4 /dev/urandom 2>/dev/null | od -An -tx1 2>/dev/null | tr -d ' \n' || echo "0000")
+if [[ -n "$TAG" ]]; then
+    RUN_ID="syshammer_${TAG}_${_ts}_${_rand}"
+else
+    RUN_ID="syshammer_${_ts}_${_rand}"
+fi
+
+# --- Resolve Output Directory ---
+if [[ -z "$OUT_DIR" ]]; then
+    RUN_DIR="$(pwd)/runs/${RUN_ID}"
+elif [[ -d "$OUT_DIR" || "$OUT_DIR" == */ ]]; then
+    RUN_DIR="${OUT_DIR%/}/${RUN_ID}"
+else
+    RUN_DIR="$OUT_DIR"
+fi
+
+export RUN_DIR
+
+# --- Create Run Directory Structure ---
+ensure_dir "$RUN_DIR/meta"
+ensure_dir "$RUN_DIR/samples"
+ensure_dir "$RUN_DIR/modules"
+ensure_dir "$RUN_DIR/report"
+
+# Initialize core.log
+: > "$RUN_DIR/meta/core.log"
+
+log_info "Syshammer v${SYSHAMMER_VERSION} starting"
+log_info "Run ID: $RUN_ID"
+log_info "Config: $CONFIG_FILE"
+log_info "Output: $RUN_DIR"
+[[ "$DEBUG" == "1" ]] && log_info "Debug mode: enabled"
+
+# --- Write Initial Metadata ---
+META_FILE="$RUN_DIR/meta/syshammer.kv"
+kv_write "$META_FILE" "version" "$SYSHAMMER_VERSION"
+kv_write "$META_FILE" "run_id" "$RUN_ID"
+kv_write "$META_FILE" "tag" "$TAG"
+kv_write "$META_FILE" "config_path" "$(realpath "$CONFIG_FILE" 2>/dev/null || echo "$CONFIG_FILE")"
+kv_write "$META_FILE" "config_hash" "$(md5_or_sha "$CONFIG_FILE")"
+kv_write "$META_FILE" "debug" "$DEBUG"
+kv_write "$META_FILE" "start_ts" "$(date '+%s')"
+kv_write "$META_FILE" "start_time" "$(date '+%Y-%m-%d %H:%M:%S')"
+
+# --- Parse Config ---
+CONFIG_KV="$RUN_DIR/meta/config.kv"
+config_parse "$CONFIG_FILE" "$CONFIG_KV"
+
+# Apply CLI overrides
+cli_overrides=()
+[[ "$DEBUG" == "1" ]] && cli_overrides+=("global.debug=1")
+[[ -n "$TAG" ]] && cli_overrides+=("global.tag=$TAG")
+if [[ ${#cli_overrides[@]} -gt 0 ]]; then
+    config_apply_overrides "$CONFIG_KV" "${cli_overrides[@]}"
+fi
+
+log_info "Config parsed: $CONFIG_KV"
+
+# --- Install Traps ---
+install_traps
+
+# --- Platform Detection ---
+platform_collect "$RUN_DIR"
+
+# --- Tool Detection ---
+tools_detect "$RUN_DIR"
+
+# --- Plan Expansion ---
+if ! plan_expand "$RUN_DIR"; then
+    log_error "Plan expansion failed"
+    exit 1
+fi
+
+# --- Start Sampler ---
+SAMPLE_PERIOD=$(config_get "global.sample_period_ms" "1000")
+sampler_start "$RUN_DIR" "$SAMPLE_PERIOD"
+
+# --- Run Plan ---
+log_info "=== Execution Starting ==="
+run_rc=0
+run_plan "$RUN_DIR" || run_rc=$?
+
+# --- Stop Sampler ---
+sampler_stop
+
+# --- Overall Scoring ---
+score_overall "$RUN_DIR"
+
+# --- Generate Report ---
+if [[ "$NO_REPORT" -ne 1 ]]; then
+    report_generate "$RUN_DIR"
+fi
+
+# --- Final Metadata ---
+kv_write "$META_FILE" "end_ts" "$(date '+%s')"
+kv_write "$META_FILE" "end_time" "$(date '+%Y-%m-%d %H:%M:%S')"
+
+OVERALL_STATUS=$(kv_read "$META_FILE" "overall_status" "unknown")
+OVERALL_SCORE=$(kv_read "$META_FILE" "overall_score" "0")
+
+log_info "=== Syshammer Complete ==="
+log_info "Status: $OVERALL_STATUS  Score: $OVERALL_SCORE/100"
+log_info "Artifacts: $RUN_DIR"
+
+# Exit code: 0 for pass/warn, 1 for fail
+if [[ "$OVERALL_STATUS" == "fail" ]]; then
+    exit 1
+fi
+exit 0

@@ -1,0 +1,11 @@
+processor	: 0
+model name	: ARMv7 Processor rev 4 (v7l)
+BogoMIPS	: 48.00
+Features	: half thumb fastmult vfp edsp neon vfpv3 tls vfpv4 idiva idivt
+Hardware	: Test Board SoC
+
+processor	: 1
+model name	: ARMv7 Processor rev 4 (v7l)
+BogoMIPS	: 48.00
+Features	: half thumb fastmult vfp edsp neon vfpv3 tls vfpv4 idiva idivt
+Hardware	: Test Board SoC

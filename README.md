@@ -1,2 +1,0 @@
-# SysHammer
-stress benchmark tools

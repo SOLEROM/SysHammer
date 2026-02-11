@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Fake fio for testing
+: "${FAKE_FIO_EXIT:=0}"
+
+if [[ "${1:-}" == "--version" ]]; then
+    echo "fio-3.36"
+    exit 0
+fi
+
+echo "syshammer: (g=0): rw=randrw, bs=4096B-4096B"
+echo "  read: IOPS=1234, BW=4936KiB/s"
+echo "  write: IOPS=567, BW=2268KiB/s"
+sleep 0.1
+exit "${FAKE_FIO_EXIT}"

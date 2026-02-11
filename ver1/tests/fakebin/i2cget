@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Fake i2cget for testing
+: "${FAKE_I2CGET_EXIT:=0}"
+
+if [[ "${1:-}" == "-V" ]]; then
+    echo "i2cget version 4.3"
+    exit 0
+fi
+
+echo "0x42"
+exit "${FAKE_I2CGET_EXIT}"

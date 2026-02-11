@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Fake dd for testing - just create a small file
+: "${FAKE_DD_EXIT:=0}"
+
+# Parse of= argument
+out_file=""
+for arg in "$@"; do
+    [[ "$arg" == of=* ]] && out_file="${arg#of=}"
+done
+
+if [[ -n "$out_file" ]]; then
+    printf '\x55\xAA' > "$out_file"
+fi
+
+echo "16384+0 records in"
+echo "16384+0 records out"
+echo "67108864 bytes (67 MB) copied, 0.5 s, 134 MB/s"
+exit "${FAKE_DD_EXIT}"
