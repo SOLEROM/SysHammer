@@ -34,7 +34,6 @@ MODULE="$VER1_DIR/modules/cpu/module.sh"
 # Create config kv
 cat > "$TMPDIR/config.kv" << 'EOF'
 module.cpu.workers=2
-module.cpu.weight=3
 module.cpu.temp_warn_c=80
 module.cpu.temp_fail_c=95
 EOF

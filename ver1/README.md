@@ -2,19 +2,19 @@
 
 Config-driven stress-testing and hardware validation orchestrator for embedded Linux systems. Pure bash, no Python/Perl dependencies.
 
-sysHammer runs a configurable sequence of hardware stress tests (CPU, memory, storage, networking, buses), monitors system health throughout, scores each subsystem, and produces a self-contained HTML report.
+sysHammer runs a configurable sequence of hardware stress tests (CPU, memory, storage, networking, buses), monitors system health throughout, and produces a self-contained HTML report with pass/warn/fail status for each module.
 
 ## Quick Start
 
 ```bash
 # Make the CLI executable
-chmod +x ver1/syshammer
+chmod +x syshammer
 
 # Run with the example config
-ver1/syshammer --config ver1/examples/basic.cfg
+./syshammer --config examples/basic.cfg
 
 # Run with a custom output directory and tag
-ver1/syshammer --config my_board.cfg --out /tmp/results --tag rk3588_dvt --debug
+./syshammer --config my_board.cfg --out /tmp/results --tag rk3588_dvt --debug
 ```
 
 ## CLI Usage
@@ -35,7 +35,7 @@ Exit code: `0` for pass/warn, `1` for fail.
 
 ## Configuration
 
-sysHammer uses an INI-style config file. See `ver1/examples/basic.cfg` for a complete example.
+sysHammer uses an INI-style config file. See `examples/basic.cfg` for a complete example.
 
 ### Sections
 
@@ -52,7 +52,6 @@ sysHammer uses an INI-style config file. See `ver1/examples/basic.cfg` for a com
 | Key | Default | Description |
 |-----|---------|-------------|
 | `duration_s` | `30` | Test duration in seconds |
-| `weight` | `1` | Scoring weight |
 
 **`[plan]`** - Test plan:
 ```ini
@@ -93,7 +92,6 @@ members = flash,comm_eth
 
 [module.cpu]
 duration_s = 60
-weight = 3
 workers = 0
 temp_warn_c = 80
 
@@ -123,21 +121,18 @@ Each module implements four subcommands: `probe` (detect hardware), `run` (execu
 
 Modules gracefully skip when their required tools or hardware are not present.
 
-## Scoring
+## Status Determination
 
-Each module starts at 100 points. Deductions are applied based on failure events detected during evaluation:
+Each module gets a status based on events detected during evaluation:
 
-| Severity | Deduction | Cap |
-|----------|-----------|-----|
-| `warn` | -5 | -30 total |
-| `fail` | -20 | -100 total |
+- **pass**: no failure events
+- **warn**: only warning-level events (e.g. thermal throttle, high packet loss)
+- **fail**: any error-level event or hard-fail code detected
+- **skip**: module not supported or disabled
 
-Hard-fail codes (automatic score = 0): `KERNEL_OOPS`, `OOM_KILL`, `IO_ERROR`, `DEVICE_RESET`, `LINK_DOWN_PERSIST`, `TIMEOUT`.
+Hard-fail codes: `KERNEL_OOPS`, `OOM_KILL`, `IO_ERROR`, `DEVICE_RESET`, `LINK_DOWN_PERSIST`, `TIMEOUT`.
 
-Overall score is a weighted average across all non-skipped modules. Final status:
-- **pass**: score >= 70, no hard-fail
-- **warn**: score >= 40, no hard-fail
-- **fail**: score < 40 or any hard-fail
+Overall status is the worst status across all non-skipped modules.
 
 ## Output Artifacts
 
@@ -146,7 +141,7 @@ Each run produces a timestamped directory:
 ```
 runs/syshammer_<tag>_<timestamp>_<rand>/
   meta/
-    syshammer.kv          # Run metadata (version, timestamps, overall score)
+    syshammer.kv          # Run metadata (version, timestamps, overall status)
     config.kv             # Flattened config
     platform.kv           # Platform info (CPU, memory, kernel, mounts)
     tools.kv              # Detected tools and versions
@@ -158,7 +153,7 @@ runs/syshammer_<tag>_<timestamp>_<rand>/
     <name>/
       probe.kv            # Probe results
       stdout.log          # Module stdout/stderr
-      result.kv           # Score, status, duration, weight
+      result.kv           # Status, duration, error/warning counts
       fails.kv            # Failure events (if any)
       pids.kv             # PIDs tracked during run
   report/
@@ -179,7 +174,7 @@ Data is written to `samples/system.csv` and included in the HTML report.
 ## Running Tests
 
 ```bash
-bash ver1/tests/run_tests.sh
+bash tests/run_tests.sh
 ```
 
 The test suite uses fake binaries (`tests/fakebin/`) and a fake sysfs/proc tree (`tests/fakesys/`) so tests run on any machine without real hardware or stress tools.
@@ -202,9 +197,8 @@ The test suite uses fake binaries (`tests/fakebin/`) and a fake sysfs/proc tree 
 ## Project Layout
 
 ```
-ver1/
-  syshammer              # Main CLI entry point
-  lib/                   # Core libraries
+syshammer              # Main CLI entry point
+lib/                   # Core libraries
     common.sh            # Logging, kv operations, utilities
     config.sh            # INI config parser
     plan.sh              # Plan expansion
@@ -212,18 +206,18 @@ ver1/
     tools.sh             # Tool detection
     runner.sh            # Stage executor (sequential + parallel)
     sampler.sh           # Background system sampler
-    scoring.sh           # Score calculation
+    scoring.sh           # Status determination
     report.sh            # HTML report generator
     cleanup.sh           # Trap handling, cleanup orchestration
-  modules/               # Hardware test modules
+modules/               # Hardware test modules
     cpu/  memory/  ddr/  flash/
     comm_eth/  comm_wifi/  comm_ble/
     bus_spi/  bus_i2c/
     gpu/  npu_rknn/
-  tests/                 # Test suite
+tests/                 # Test suite
     run_tests.sh         # Test runner
     fakebin/             # Stubbed CLI tools
     fakesys/             # Fake /proc and /sys trees
-  examples/
+examples/
     basic.cfg            # Full example config
 ```

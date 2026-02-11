@@ -57,7 +57,6 @@ MODULE_DIR="$TESTS_DIR/modules"
 cat > "$TMPDIR/test1.cfg" << 'EOF'
 [module_defaults]
 duration_s = 1
-weight = 1
 
 [plan]
 stages = s1
@@ -89,7 +88,6 @@ assert_eq "skip status" "skip" "$(kv_read "$RUN_DIR/modules/fast_skip/result.kv"
 cat > "$TMPDIR/test2.cfg" << 'EOF'
 [module_defaults]
 duration_s = 1
-weight = 1
 
 [plan]
 stages = p1
@@ -127,7 +125,6 @@ stop_on_fail = true
 
 [module_defaults]
 duration_s = 1
-weight = 1
 
 [plan]
 stages = s1,s2

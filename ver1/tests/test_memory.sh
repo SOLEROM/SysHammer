@@ -34,7 +34,6 @@ MODULE="$VER1_DIR/modules/memory/module.sh"
 cat > "$TMPDIR/config.kv" << 'EOF'
 module.memory.workers=1
 module.memory.vm_bytes=80%
-module.memory.weight=2
 EOF
 
 # Test 1: Probe

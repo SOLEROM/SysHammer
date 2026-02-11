@@ -36,7 +36,6 @@ cat > "$TMPDIR/eth_config.kv" << 'EOF'
 module.comm_eth.iface=eth0
 module.comm_eth.target=8.8.8.8
 module.comm_eth.max_loss_pct=5
-module.comm_eth.weight=1
 EOF
 
 # Test 1: eth probe with interface present
@@ -79,7 +78,6 @@ module.comm_wifi.iface=wlan0
 module.comm_wifi.target=8.8.8.8
 module.comm_wifi.max_loss_pct=10
 module.comm_wifi.rssi_warn_dbm=-75
-module.comm_wifi.weight=1
 EOF
 
 # Test 5: wifi probe with interface
@@ -100,7 +98,6 @@ BLE_MODULE="$VER1_DIR/modules/comm_ble/module.sh"
 
 cat > "$TMPDIR/ble_config.kv" << 'EOF'
 module.comm_ble.scan_cycles=2
-module.comm_ble.weight=1
 EOF
 
 # Test 7: ble probe

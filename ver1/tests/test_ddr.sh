@@ -34,7 +34,6 @@ MODULE="$VER1_DIR/modules/ddr/module.sh"
 cat > "$TMPDIR/config.kv" << 'EOF'
 module.ddr.workers=2
 module.ddr.method=stream
-module.ddr.weight=1
 EOF
 
 # Test 1: Probe

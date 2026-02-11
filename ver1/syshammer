@@ -170,10 +170,9 @@ kv_write "$META_FILE" "end_ts" "$(date '+%s')"
 kv_write "$META_FILE" "end_time" "$(date '+%Y-%m-%d %H:%M:%S')"
 
 OVERALL_STATUS=$(kv_read "$META_FILE" "overall_status" "unknown")
-OVERALL_SCORE=$(kv_read "$META_FILE" "overall_score" "0")
 
 log_info "=== Syshammer Complete ==="
-log_info "Status: $OVERALL_STATUS  Score: $OVERALL_SCORE/100"
+log_info "Status: $OVERALL_STATUS"
 log_info "Artifacts: $RUN_DIR"
 
 # Exit code: 0 for pass/warn, 1 for fail

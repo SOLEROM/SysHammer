@@ -113,9 +113,6 @@ cmd_evaluate() {
     fi
 
     kv_write "$result_file" "duration_s" "${DURATION:-0}"
-    local weight
-    weight=$(kv_read "$CFG_FILE" "module.flash.weight" "1")
-    kv_write "$result_file" "weight" "$weight"
 }
 
 cmd_cleanup() {

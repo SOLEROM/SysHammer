@@ -33,7 +33,6 @@ sample_period_ms = 500
 
 [module_defaults]
 duration_s = 30
-weight = 1
 
 [plan]
 stages = stage1,stage2
@@ -53,7 +52,6 @@ assert_eq "global.tag" "test_run" "$(config_get "global.tag")"
 assert_eq "global.debug" "0" "$(config_get "global.debug")"
 assert_eq "global.sample_period_ms" "500" "$(config_get "global.sample_period_ms")"
 assert_eq "module_defaults.duration_s" "30" "$(config_get "module_defaults.duration_s")"
-assert_eq "module_defaults.weight" "1" "$(config_get "module_defaults.weight")"
 assert_eq "plan.stages" "stage1,stage2" "$(config_get "plan.stages")"
 assert_eq "stage.stage1.mode" "sequential" "$(config_get "stage.stage1.mode")"
 assert_eq "stage.stage1.members" "cpu,memory" "$(config_get "stage.stage1.members")"

@@ -32,7 +32,6 @@ case "${1:-}" in
         shift; _parse_args "$@"
         : > "$OUT_DIR/fails.kv"
         kv_write "$OUT_DIR/result.kv" "duration_s" "${DURATION:-0}"
-        kv_write "$OUT_DIR/result.kv" "weight" "1"
         ;;
     cleanup)
         shift; _parse_args "$@"

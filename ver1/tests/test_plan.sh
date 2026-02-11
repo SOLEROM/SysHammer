@@ -29,7 +29,6 @@ trap 'rm -rf "$TMPDIR"' EXIT
 cat > "$TMPDIR/test.cfg" << 'EOF'
 [module_defaults]
 duration_s = 30
-weight = 1
 
 [plan]
 stages = stress,comms
@@ -45,10 +44,6 @@ duration_s = 20
 
 [module.cpu]
 duration_s = 60
-weight = 3
-
-[module.memory]
-weight = 2
 EOF
 
 mkdir -p "$TMPDIR/run/meta"
@@ -63,17 +58,14 @@ assert_eq "stage_count" "2" "$(kv_read "$local_plan" "stage_count")"
 assert_eq "stress mode" "parallel" "$(kv_read "$local_plan" "stage.stress.mode")"
 assert_eq "comms mode" "sequential" "$(kv_read "$local_plan" "stage.comms.mode")"
 
-# CPU: duration from module (60), weight from module (3)
+# CPU: duration from module (60)
 assert_eq "cpu duration" "60" "$(kv_read "$local_plan" "stage.stress.module.cpu.duration_s")"
-assert_eq "cpu weight" "3" "$(kv_read "$local_plan" "stage.stress.module.cpu.weight")"
 
-# Memory: duration from default (30), weight from module (2)
+# Memory: duration from default (30)
 assert_eq "memory duration" "30" "$(kv_read "$local_plan" "stage.stress.module.memory.duration_s")"
-assert_eq "memory weight" "2" "$(kv_read "$local_plan" "stage.stress.module.memory.weight")"
 
-# comm_eth: duration from stage (20), weight from default (1)
+# comm_eth: duration from stage (20)
 assert_eq "eth duration" "20" "$(kv_read "$local_plan" "stage.comms.module.comm_eth.duration_s")"
-assert_eq "eth weight" "1" "$(kv_read "$local_plan" "stage.comms.module.comm_eth.weight")"
 
 # Timeout: cpu should be 60+30=90
 assert_eq "cpu timeout" "90" "$(kv_read "$local_plan" "stage.stress.module.cpu.timeout_s")"

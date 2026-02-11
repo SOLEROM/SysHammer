@@ -281,8 +281,6 @@ _probe_module() {
 _write_skip_result() {
     local mod_dir="$1" reason="$2"
     kv_write "$mod_dir/result.kv" "status" "skip"
-    kv_write "$mod_dir/result.kv" "score" "0"
-    kv_write "$mod_dir/result.kv" "weight" "0"
     kv_write "$mod_dir/result.kv" "errors" "0"
     kv_write "$mod_dir/result.kv" "warnings" "0"
     kv_write "$mod_dir/result.kv" "duration_s" "0"

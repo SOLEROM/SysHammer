@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test_scoring.sh - Scoring model unit tests
+# test_scoring.sh - Status determination unit tests
 set -euo pipefail
 
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,15 +25,16 @@ assert_eq() {
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
-# Test 1: Perfect score (no failures)
+# Test 1: No failures -> pass
 mkdir -p "$TMPDIR/mod1"
 : > "$TMPDIR/mod1/result.kv"
 : > "$TMPDIR/mod1/fails.kv"
 score_module "$TMPDIR/mod1"
-assert_eq "perfect score" "100" "$(kv_read "$TMPDIR/mod1/result.kv" "score")"
-assert_eq "perfect status" "pass" "$(kv_read "$TMPDIR/mod1/result.kv" "status")"
+assert_eq "no failures -> pass" "pass" "$(kv_read "$TMPDIR/mod1/result.kv" "status")"
+assert_eq "no failures: 0 errors" "0" "$(kv_read "$TMPDIR/mod1/result.kv" "errors")"
+assert_eq "no failures: 0 warnings" "0" "$(kv_read "$TMPDIR/mod1/result.kv" "warnings")"
 
-# Test 2: Warnings only (each -5, capped at 30)
+# Test 2: Warnings only -> warn
 mkdir -p "$TMPDIR/mod2"
 : > "$TMPDIR/mod2/result.kv"
 cat > "$TMPDIR/mod2/fails.kv" << 'EOF'
@@ -42,105 +43,83 @@ ts=1001 code=THERMAL_WARN sev=warn detail=warm2
 ts=1002 code=THROTTLE_DETECTED sev=warn detail=throttle
 EOF
 score_module "$TMPDIR/mod2"
-# 3 warnings * 5 = 15 deduction -> score=85
-assert_eq "3 warnings score" "85" "$(kv_read "$TMPDIR/mod2/result.kv" "score")"
-assert_eq "3 warnings status" "pass" "$(kv_read "$TMPDIR/mod2/result.kv" "status")"
-assert_eq "3 warnings count" "3" "$(kv_read "$TMPDIR/mod2/result.kv" "warnings")"
+assert_eq "warnings only -> warn" "warn" "$(kv_read "$TMPDIR/mod2/result.kv" "status")"
+assert_eq "warnings count" "3" "$(kv_read "$TMPDIR/mod2/result.kv" "warnings")"
+assert_eq "warnings: 0 errors" "0" "$(kv_read "$TMPDIR/mod2/result.kv" "errors")"
 
-# Test 3: Warning cap at 30
+# Test 3: Fail events -> fail
 mkdir -p "$TMPDIR/mod3"
 : > "$TMPDIR/mod3/result.kv"
-: > "$TMPDIR/mod3/fails.kv"
-for i in $(seq 1 10); do
-    echo "ts=${i}000 code=THERMAL_WARN sev=warn detail=warm${i}" >> "$TMPDIR/mod3/fails.kv"
-done
-score_module "$TMPDIR/mod3"
-# 10 warnings * 5 = 50, but capped at 30 -> score=70
-assert_eq "warn cap score" "70" "$(kv_read "$TMPDIR/mod3/result.kv" "score")"
-assert_eq "warn cap status" "pass" "$(kv_read "$TMPDIR/mod3/result.kv" "status")"
-
-# Test 4: Fail events (-20 each)
-mkdir -p "$TMPDIR/mod4"
-: > "$TMPDIR/mod4/result.kv"
-cat > "$TMPDIR/mod4/fails.kv" << 'EOF'
+cat > "$TMPDIR/mod3/fails.kv" << 'EOF'
 ts=1000 code=TOOL_ERROR sev=fail detail=error1
 ts=1001 code=TOOL_ERROR sev=fail detail=error2
 EOF
-score_module "$TMPDIR/mod4"
-# 2 fails * 20 = 40 deduction -> score=60
-assert_eq "2 fails score" "60" "$(kv_read "$TMPDIR/mod4/result.kv" "score")"
-assert_eq "2 fails status" "warn" "$(kv_read "$TMPDIR/mod4/result.kv" "status")"
+score_module "$TMPDIR/mod3"
+assert_eq "fail events -> fail" "fail" "$(kv_read "$TMPDIR/mod3/result.kv" "status")"
+assert_eq "fail events: error count" "2" "$(kv_read "$TMPDIR/mod3/result.kv" "errors")"
 
-# Test 5: Hard-fail code forces status=fail
+# Test 4: Hard-fail code -> fail
+mkdir -p "$TMPDIR/mod4"
+: > "$TMPDIR/mod4/result.kv"
+cat > "$TMPDIR/mod4/fails.kv" << 'EOF'
+ts=1000 code=KERNEL_OOPS sev=fail detail=oops
+EOF
+score_module "$TMPDIR/mod4"
+assert_eq "hard-fail -> fail" "fail" "$(kv_read "$TMPDIR/mod4/result.kv" "status")"
+assert_eq "hard-fail: fail_codes" "KERNEL_OOPS" "$(kv_read "$TMPDIR/mod4/result.kv" "fail_codes")"
+
+# Test 5: Mixed warn + fail -> fail
 mkdir -p "$TMPDIR/mod5"
 : > "$TMPDIR/mod5/result.kv"
 cat > "$TMPDIR/mod5/fails.kv" << 'EOF'
-ts=1000 code=KERNEL_OOPS sev=fail detail=oops
+ts=1000 code=THERMAL_WARN sev=warn detail=warm
+ts=1001 code=TOOL_ERROR sev=fail detail=error1
 EOF
 score_module "$TMPDIR/mod5"
-assert_eq "hard-fail status" "fail" "$(kv_read "$TMPDIR/mod5/result.kv" "status")"
+assert_eq "mixed -> fail" "fail" "$(kv_read "$TMPDIR/mod5/result.kv" "status")"
+assert_eq "mixed: 1 warning" "1" "$(kv_read "$TMPDIR/mod5/result.kv" "warnings")"
+assert_eq "mixed: 1 error" "1" "$(kv_read "$TMPDIR/mod5/result.kv" "errors")"
 
-# Test 6: Score below 40 -> fail
+# Test 6: Skip module not rescored
 mkdir -p "$TMPDIR/mod6"
-: > "$TMPDIR/mod6/result.kv"
-: > "$TMPDIR/mod6/fails.kv"
-for i in $(seq 1 4); do
-    echo "ts=${i}000 code=TOOL_ERROR sev=fail detail=err${i}" >> "$TMPDIR/mod6/fails.kv"
-done
+kv_write "$TMPDIR/mod6/result.kv" "status" "skip"
 score_module "$TMPDIR/mod6"
-# 4 * 20 = 80 deduction -> score=20
-assert_eq "low score" "20" "$(kv_read "$TMPDIR/mod6/result.kv" "score")"
-assert_eq "low score status" "fail" "$(kv_read "$TMPDIR/mod6/result.kv" "status")"
+assert_eq "skip preserved" "skip" "$(kv_read "$TMPDIR/mod6/result.kv" "status")"
 
-# Test 7: Score between 40-69 -> warn
-mkdir -p "$TMPDIR/mod7"
-: > "$TMPDIR/mod7/result.kv"
-cat > "$TMPDIR/mod7/fails.kv" << 'EOF'
-ts=1000 code=TOOL_ERROR sev=fail detail=err1
-ts=1001 code=TOOL_ERROR sev=fail detail=err2
-ts=1002 code=THERMAL_WARN sev=warn detail=warm
+# Test 7: Overall status - all pass
+mkdir -p "$TMPDIR/run1/meta" "$TMPDIR/run1/modules/a" "$TMPDIR/run1/modules/b"
+: > "$TMPDIR/run1/meta/syshammer.kv"
+kv_write "$TMPDIR/run1/modules/a/result.kv" "status" "pass"
+kv_write "$TMPDIR/run1/modules/b/result.kv" "status" "pass"
+score_overall "$TMPDIR/run1"
+assert_eq "overall all pass" "pass" "$(kv_read "$TMPDIR/run1/meta/syshammer.kv" "overall_status")"
+assert_eq "overall modules_run" "2" "$(kv_read "$TMPDIR/run1/meta/syshammer.kv" "modules_run")"
+
+# Test 8: Overall status - worst is warn
+mkdir -p "$TMPDIR/run2/meta" "$TMPDIR/run2/modules/a" "$TMPDIR/run2/modules/b" "$TMPDIR/run2/modules/c"
+: > "$TMPDIR/run2/meta/syshammer.kv"
+kv_write "$TMPDIR/run2/modules/a/result.kv" "status" "pass"
+kv_write "$TMPDIR/run2/modules/b/result.kv" "status" "warn"
+kv_write "$TMPDIR/run2/modules/c/result.kv" "status" "skip"
+score_overall "$TMPDIR/run2"
+assert_eq "overall worst warn" "warn" "$(kv_read "$TMPDIR/run2/meta/syshammer.kv" "overall_status")"
+assert_eq "overall modules_run 2" "2" "$(kv_read "$TMPDIR/run2/meta/syshammer.kv" "modules_run")"
+assert_eq "overall modules_skipped" "1" "$(kv_read "$TMPDIR/run2/meta/syshammer.kv" "modules_skipped")"
+
+# Test 9: Overall status - worst is fail
+kv_write "$TMPDIR/run2/modules/b/result.kv" "status" "fail"
+score_overall "$TMPDIR/run2"
+assert_eq "overall worst fail" "fail" "$(kv_read "$TMPDIR/run2/meta/syshammer.kv" "overall_status")"
+
+# Test 10: fail_codes tracked correctly
+mkdir -p "$TMPDIR/mod10"
+: > "$TMPDIR/mod10/result.kv"
+cat > "$TMPDIR/mod10/fails.kv" << 'EOF'
+ts=1000 code=IO_ERROR sev=fail detail=io
+ts=1001 code=DEVICE_RESET sev=warn detail=reset
 EOF
-score_module "$TMPDIR/mod7"
-# 2*20 + 1*5 = 45 -> score=55
-assert_eq "warn range score" "55" "$(kv_read "$TMPDIR/mod7/result.kv" "score")"
-assert_eq "warn range status" "warn" "$(kv_read "$TMPDIR/mod7/result.kv" "status")"
-
-# Test 8: Skip module not rescored
-mkdir -p "$TMPDIR/mod8"
-kv_write "$TMPDIR/mod8/result.kv" "status" "skip"
-score_module "$TMPDIR/mod8"
-assert_eq "skip preserved" "skip" "$(kv_read "$TMPDIR/mod8/result.kv" "status")"
-
-# Test 9: Overall scoring
-mkdir -p "$TMPDIR/run/meta" "$TMPDIR/run/modules/a" "$TMPDIR/run/modules/b" "$TMPDIR/run/modules/c"
-: > "$TMPDIR/run/meta/syshammer.kv"
-
-# Module a: pass, score=100, weight=2
-kv_write "$TMPDIR/run/modules/a/result.kv" "status" "pass"
-kv_write "$TMPDIR/run/modules/a/result.kv" "score" "100"
-kv_write "$TMPDIR/run/modules/a/result.kv" "weight" "2"
-
-# Module b: warn, score=60, weight=1
-kv_write "$TMPDIR/run/modules/b/result.kv" "status" "warn"
-kv_write "$TMPDIR/run/modules/b/result.kv" "score" "60"
-kv_write "$TMPDIR/run/modules/b/result.kv" "weight" "1"
-
-# Module c: skip (should be excluded)
-kv_write "$TMPDIR/run/modules/c/result.kv" "status" "skip"
-kv_write "$TMPDIR/run/modules/c/result.kv" "score" "0"
-kv_write "$TMPDIR/run/modules/c/result.kv" "weight" "0"
-
-score_overall "$TMPDIR/run"
-# weighted avg = (100*2 + 60*1) / (2+1) = 260/3 = 86 (integer division)
-assert_eq "overall score" "86" "$(kv_read "$TMPDIR/run/meta/syshammer.kv" "overall_score")"
-assert_eq "overall status" "warn" "$(kv_read "$TMPDIR/run/meta/syshammer.kv" "overall_status")"
-assert_eq "modules run" "2" "$(kv_read "$TMPDIR/run/meta/syshammer.kv" "modules_run")"
-assert_eq "modules skipped" "1" "$(kv_read "$TMPDIR/run/meta/syshammer.kv" "modules_skipped")"
-
-# Test 10: Overall with fail -> worst status is fail
-kv_write "$TMPDIR/run/modules/b/result.kv" "status" "fail"
-score_overall "$TMPDIR/run"
-assert_eq "overall worst fail" "fail" "$(kv_read "$TMPDIR/run/meta/syshammer.kv" "overall_status")"
+score_module "$TMPDIR/mod10"
+assert_eq "multiple codes" "IO_ERROR,DEVICE_RESET" "$(kv_read "$TMPDIR/mod10/result.kv" "fail_codes")"
 
 echo ""
 echo "test_scoring: $PASS/$TOTAL passed, $FAIL failed"

@@ -34,7 +34,6 @@ SPI_MODULE="$VER1_DIR/modules/bus_spi/module.sh"
 
 # Test 1: SPI probe without config -> skip
 cat > "$TMPDIR/spi_config1.kv" << 'EOF'
-module.bus_spi.weight=1
 EOF
 mkdir -p "$TMPDIR/spi_probe1"
 bash "$SPI_MODULE" probe --out "$TMPDIR/spi_probe1" --cfg "$TMPDIR/spi_config1.kv"
@@ -45,7 +44,6 @@ cat > "$TMPDIR/spi_config2.kv" << 'EOF'
 module.bus_spi.device=/tmp/test_spidev
 module.bus_spi.speed=1000000
 module.bus_spi.iterations=3
-module.bus_spi.weight=1
 EOF
 touch /tmp/test_spidev
 mkdir -p "$TMPDIR/spi_probe2"
@@ -73,7 +71,6 @@ I2C_MODULE="$VER1_DIR/modules/bus_i2c/module.sh"
 
 # Test 5: I2C probe without config -> skip
 cat > "$TMPDIR/i2c_config1.kv" << 'EOF'
-module.bus_i2c.weight=1
 EOF
 mkdir -p "$TMPDIR/i2c_probe1"
 bash "$I2C_MODULE" probe --out "$TMPDIR/i2c_probe1" --cfg "$TMPDIR/i2c_config1.kv"
@@ -85,7 +82,6 @@ module.bus_i2c.bus=0
 module.bus_i2c.addr=0x50
 module.bus_i2c.reg=0x00
 module.bus_i2c.iterations=5
-module.bus_i2c.weight=1
 EOF
 mkdir -p "$TMPDIR/i2c_probe2"
 bash "$I2C_MODULE" probe --out "$TMPDIR/i2c_probe2" --cfg "$TMPDIR/i2c_config2.kv"

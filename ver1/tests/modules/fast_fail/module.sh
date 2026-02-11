@@ -33,7 +33,6 @@ case "${1:-}" in
         fail_event "$OUT_DIR/fails.kv" "IO_ERROR" "fail" "Simulated hard failure"
         fail_event "$OUT_DIR/fails.kv" "THERMAL_WARN" "warn" "Simulated warning"
         kv_write "$OUT_DIR/result.kv" "duration_s" "${DURATION:-0}"
-        kv_write "$OUT_DIR/result.kv" "weight" "1"
         ;;
     cleanup)
         shift; _parse_args "$@"

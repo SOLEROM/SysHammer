@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# plan.sh - Plan expansion: resolve stages, durations, weights from config
+# plan.sh - Plan expansion: resolve stages, durations from config
 
 # Expand the execution plan from parsed config.
-# Resolves stages, members, durations, weights with precedence:
+# Resolves stages, members, durations with precedence:
 #   module.<name>.X > stage.<stage>.X > module_defaults.X
 # Writes expanded plan to meta/plan.kv
 plan_expand() {
@@ -21,12 +21,10 @@ plan_expand() {
     kv_write "$plan_file" "stages" "$stages_csv"
 
     # Defaults
-    local default_duration default_weight
+    local default_duration
     default_duration=$(config_get "module_defaults.duration_s" "30")
-    default_weight=$(config_get "module_defaults.weight" "1")
 
     kv_write "$plan_file" "default_duration_s" "$default_duration"
-    kv_write "$plan_file" "default_weight" "$default_weight"
 
     # Track all modules that appear in any stage
     local all_modules=""
@@ -83,10 +81,6 @@ plan_expand() {
             if [[ -z "$dur" ]]; then dur="$stage_duration"; fi
             if [[ -z "$dur" ]]; then dur="$default_duration"; fi
 
-            # Resolve weight: module > default
-            local wgt
-            wgt=$(config_get "module.${member}.weight" "$default_weight")
-
             # Resolve timeout: module > stage > duration + 30s safety margin
             local tmo
             tmo=$(config_get "module.${member}.timeout_s" "")
@@ -94,7 +88,6 @@ plan_expand() {
             if [[ -z "$tmo" ]]; then tmo=$((dur + 30)); fi
 
             kv_write "$plan_file" "stage.${stage}.module.${member}.duration_s" "$dur"
-            kv_write "$plan_file" "stage.${stage}.module.${member}.weight" "$wgt"
             kv_write "$plan_file" "stage.${stage}.module.${member}.timeout_s" "$tmo"
             kv_write "$plan_file" "stage.${stage}.module.${member}.status" "pending"
 

@@ -35,7 +35,6 @@ cat > "$TMPDIR/config.kv" << 'EOF'
 module.flash.test_dir=/tmp
 module.flash.bs=4k
 module.flash.size=1m
-module.flash.weight=2
 EOF
 
 # Test 1: Probe with fio available
