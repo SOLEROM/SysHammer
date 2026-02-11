@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# cpu/module.sh - stress-ng cpu workers module
+# cpu/cpu.sh - stress-ng cpu workers module
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,9 +24,9 @@ _parse_args() {
 
 cmd_help() {
     cat <<'EOF'
-cpu/module.sh - CPU stress testing via stress-ng
+cpu/cpu.sh - CPU stress testing via stress-ng
 
-Usage: module.sh <command> [options]
+Usage: cpu.sh <command> [options]
 
 Commands:
   probe       Check if stress-ng is available
@@ -48,9 +48,9 @@ Config keys (set in --cfg file):
   module.cpu.temp_fail_c   Temperature failure threshold in C (default: 95)
 
 Examples:
-  ./module.sh run --duration 60
-  ./module.sh probe
-  ./module.sh run --duration 30 --cfg my_config.kv
+  ./cpu.sh run --duration 60
+  ./cpu.sh probe
+  ./cpu.sh run --duration 30 --cfg my_config.kv
 EOF
 }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ddr/module.sh - stress-ng memory/stream workloads
+# ddr/ddr.sh - stress-ng memory/stream workloads
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,9 +23,9 @@ _parse_args() {
 
 cmd_help() {
     cat <<'EOF'
-ddr/module.sh - DDR memory bandwidth stress via stress-ng stream/memcpy
+ddr/ddr.sh - DDR memory bandwidth stress via stress-ng stream/memcpy
 
-Usage: module.sh <command> [options]
+Usage: ddr.sh <command> [options]
 
 Commands:
   probe       Check if stress-ng is available
@@ -45,9 +45,9 @@ Config keys (set in --cfg file):
   module.ddr.method     Stressor method: stream or memcpy (default: stream)
 
 Examples:
-  ./module.sh run --duration 60
-  ./module.sh probe
-  ./module.sh run --duration 30 --cfg my_config.kv
+  ./ddr.sh run --duration 60
+  ./ddr.sh probe
+  ./ddr.sh run --duration 30 --cfg my_config.kv
 EOF
 }
 

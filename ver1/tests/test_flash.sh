@@ -29,7 +29,7 @@ assert_eq() {
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
-MODULE="$VER1_DIR/modules/flash/module.sh"
+MODULE="$VER1_DIR/modules/flash/flash.sh"
 
 cat > "$TMPDIR/config.kv" << 'EOF'
 module.flash.test_dir=/tmp

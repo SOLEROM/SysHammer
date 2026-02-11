@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bus_i2c/module.sh - i2cget/i2cset transactions or skip
+# bus_spi/bus_spi.sh - spidev loopback or skip
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,14 +23,14 @@ _parse_args() {
 
 cmd_help() {
     cat <<'EOF'
-bus_i2c/module.sh - I2C read transaction testing via i2cget
+bus_spi/bus_spi.sh - SPI loopback transaction testing via spidev_test
 
-Usage: module.sh <command> [options]
+Usage: bus_spi.sh <command> [options]
 
 Commands:
-  probe       Check if I2C bus/addr is configured and i2cget exists
-  run         Execute I2C read transactions
-  evaluate    Analyze transaction results for errors
+  probe       Check if SPI device is configured and spidev_test exists
+  run         Execute SPI loopback transactions
+  evaluate    Analyze transfer results for errors
   cleanup     No persistent state to clean
   help        Show this help
 
@@ -41,14 +41,13 @@ Options:
   --help, -h        Show this help
 
 Config keys (set in --cfg file):
-  module.bus_i2c.bus          I2C bus number, required (default: "")
-  module.bus_i2c.addr         I2C device address, required (default: "")
-  module.bus_i2c.reg          Register to read (default: 0x00)
-  module.bus_i2c.iterations   Number of read iterations (default: 100)
+  module.bus_spi.device       SPI device path, required (default: "")
+  module.bus_spi.speed        SPI clock speed in Hz (default: 1000000)
+  module.bus_spi.iterations   Number of transfer iterations (default: 100)
 
 Examples:
-  ./module.sh probe --cfg my_config.kv
-  ./module.sh run --duration 10 --cfg my_config.kv
+  ./bus_spi.sh probe --cfg my_config.kv
+  ./bus_spi.sh run --duration 10 --cfg my_config.kv
 EOF
 }
 
@@ -58,49 +57,48 @@ cmd_probe() {
     local probe_file="$OUT_DIR/probe.kv"
     : > "$probe_file"
 
-    local bus addr
-    bus=$(kv_read "$CFG_FILE" "module.bus_i2c.bus" "")
-    addr=$(kv_read "$CFG_FILE" "module.bus_i2c.addr" "")
+    local device
+    device=$(kv_read "$CFG_FILE" "module.bus_spi.device" "")
 
-    if [[ -z "$bus" || -z "$addr" ]]; then
+    if [[ -z "$device" ]]; then
         kv_write "$probe_file" "supports" "false"
-        kv_write "$probe_file" "reason" "No I2C bus/addr configured (module.bus_i2c.bus, module.bus_i2c.addr)"
+        kv_write "$probe_file" "reason" "No SPI device configured (module.bus_spi.device)"
         return
     fi
 
-    if ! command -v i2cget >/dev/null 2>&1; then
+    if ! command -v spidev_test >/dev/null 2>&1; then
         kv_write "$probe_file" "supports" "false"
-        kv_write "$probe_file" "reason" "i2cget not found"
+        kv_write "$probe_file" "reason" "spidev_test not found"
+        return
+    fi
+
+    if [[ ! -c "$device" && ! -e "$device" ]]; then
+        kv_write "$probe_file" "supports" "false"
+        kv_write "$probe_file" "reason" "Device $device not found"
         return
     fi
 
     kv_write "$probe_file" "supports" "true"
-    kv_write "$probe_file" "bus" "$bus"
-    kv_write "$probe_file" "addr" "$addr"
+    kv_write "$probe_file" "device" "$device"
 }
 
 cmd_run() {
     _parse_args "$@"
     _standalone_defaults 30
-    local bus addr reg iterations
-    bus=$(kv_read "$CFG_FILE" "module.bus_i2c.bus" "0")
-    addr=$(kv_read "$CFG_FILE" "module.bus_i2c.addr" "0x50")
-    reg=$(kv_read "$CFG_FILE" "module.bus_i2c.reg" "0x00")
-    iterations=$(kv_read "$CFG_FILE" "module.bus_i2c.iterations" "100")
+    local device speed iterations
+    device=$(kv_read "$CFG_FILE" "module.bus_spi.device" "/dev/spidev0.0")
+    speed=$(kv_read "$CFG_FILE" "module.bus_spi.speed" "1000000")
+    iterations=$(kv_read "$CFG_FILE" "module.bus_spi.iterations" "100")
 
-    echo "--- I2C Transaction Test ---"
+    echo "--- SPI Loopback Test ---"
     local i=0
-    local errors=0
     while [[ $i -lt $iterations ]]; do
-        echo "CMD: i2cget -y $bus $addr $reg"
-        if ! i2cget -y "$bus" "$addr" "$reg" 2>&1; then
-            errors=$((errors + 1))
-        fi
+        echo "CMD: spidev_test -D $device -s $speed -p \\x55\\xAA"
+        spidev_test -D "$device" -s "$speed" -p '\x55\xAA' 2>&1 || true
         i=$((i + 1))
     done
-    echo "Completed $iterations transactions, errors=$errors"
 
-    kv_write "$OUT_DIR/pids.kv" "bus_i2c" "$$"
+    kv_write "$OUT_DIR/pids.kv" "bus_spi" "$$"
 }
 
 cmd_evaluate() {
@@ -112,16 +110,16 @@ cmd_evaluate() {
 
     if [[ -f "$OUT_DIR/stdout.log" ]]; then
         local error_count
-        error_count=$(grep -vi "errors=0" "$OUT_DIR/stdout.log" 2>/dev/null | grep -ci "error\|fail\|timeout" 2>/dev/null) || error_count=0
+        error_count=$(grep -ci "error\|fail\|timeout" "$OUT_DIR/stdout.log" 2>/dev/null) || error_count=0
         if [[ $error_count -gt 0 ]]; then
-            fail_event "$fails_file" "BUS_XFER_FAIL" "warn" "I2C transaction errors: $error_count"
+            fail_event "$fails_file" "BUS_XFER_FAIL" "warn" "SPI transfer errors: $error_count"
         fi
     fi
 
     local log_output
     log_output=$($LOGREAD_CMD 2>/dev/null | tail -100 || true)
-    if echo "$log_output" | grep -qi "i2c.*error\|i2c.*timeout"; then
-        fail_event "$fails_file" "BUS_XFER_FAIL" "fail" "I2C errors in kernel logs"
+    if echo "$log_output" | grep -qi "spi.*error\|spi.*timeout"; then
+        fail_event "$fails_file" "BUS_XFER_FAIL" "fail" "SPI errors in kernel logs"
     fi
 
     kv_write "$result_file" "duration_s" "${DURATION:-0}"
@@ -130,7 +128,7 @@ cmd_evaluate() {
 cmd_cleanup() {
     _parse_args "$@"
     _standalone_defaults 30
-    echo "bus_i2c cleanup: no persistent state"
+    echo "bus_spi cleanup: no persistent state"
 }
 
 case "${1:-}" in

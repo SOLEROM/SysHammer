@@ -30,7 +30,7 @@ TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
 # --- bus_spi tests ---
-SPI_MODULE="$VER1_DIR/modules/bus_spi/module.sh"
+SPI_MODULE="$VER1_DIR/modules/bus_spi/bus_spi.sh"
 
 # Test 1: SPI probe without config -> skip
 cat > "$TMPDIR/spi_config1.kv" << 'EOF'
@@ -67,7 +67,7 @@ grep -q "BUS_XFER_FAIL" "$TMPDIR/spi_eval2/fails.kv"
 assert_eq "spi xfer fail detected" "0" "$?"
 
 # --- bus_i2c tests ---
-I2C_MODULE="$VER1_DIR/modules/bus_i2c/module.sh"
+I2C_MODULE="$VER1_DIR/modules/bus_i2c/bus_i2c.sh"
 
 # Test 5: I2C probe without config -> skip
 cat > "$TMPDIR/i2c_config1.kv" << 'EOF'

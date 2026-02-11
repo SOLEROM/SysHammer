@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# comm_eth/module.sh - ping/iperf3, link stats, error counters
+# comm_eth/comm_eth.sh - ping/iperf3, link stats, error counters
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,9 +23,9 @@ _parse_args() {
 
 cmd_help() {
     cat <<'EOF'
-comm_eth/module.sh - Ethernet connectivity and throughput testing
+comm_eth/comm_eth.sh - Ethernet connectivity and throughput testing
 
-Usage: module.sh <command> [options]
+Usage: comm_eth.sh <command> [options]
 
 Commands:
   probe       Check interface exists and tools are available
@@ -47,9 +47,9 @@ Config keys (set in --cfg file):
   module.comm_eth.max_loss_pct   Max acceptable packet loss percent (default: 5)
 
 Examples:
-  ./module.sh run --duration 20
-  ./module.sh probe
-  ./module.sh run --duration 10 --cfg my_config.kv
+  ./comm_eth.sh run --duration 20
+  ./comm_eth.sh probe
+  ./comm_eth.sh run --duration 10 --cfg my_config.kv
 EOF
 }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# flash/module.sh - fio or dd+sync+verify storage stress
+# flash/flash.sh - fio or dd+sync+verify storage stress
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,9 +23,9 @@ _parse_args() {
 
 cmd_help() {
     cat <<'EOF'
-flash/module.sh - Storage I/O stress via fio or dd with verification
+flash/flash.sh - Storage I/O stress via fio or dd with verification
 
-Usage: module.sh <command> [options]
+Usage: flash.sh <command> [options]
 
 Commands:
   probe       Check if fio or dd is available and test directory is writable
@@ -47,9 +47,9 @@ Config keys (set in --cfg file):
   module.flash.min_throughput_kb Minimum throughput threshold in KB/s (default: 100)
 
 Examples:
-  ./module.sh run --duration 60
-  ./module.sh probe
-  ./module.sh run --duration 30 --cfg my_config.kv
+  ./flash.sh run --duration 60
+  ./flash.sh probe
+  ./flash.sh run --duration 30 --cfg my_config.kv
 EOF
 }
 

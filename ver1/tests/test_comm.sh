@@ -30,7 +30,7 @@ TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
 # --- comm_eth tests ---
-ETH_MODULE="$VER1_DIR/modules/comm_eth/module.sh"
+ETH_MODULE="$VER1_DIR/modules/comm_eth/comm_eth.sh"
 
 cat > "$TMPDIR/eth_config.kv" << 'EOF'
 module.comm_eth.iface=eth0
@@ -71,7 +71,7 @@ grep -q "PACKET_LOSS_HIGH" "$TMPDIR/eth_eval1/fails.kv"
 assert_eq "eth high loss detected" "0" "$?"
 
 # --- comm_wifi tests ---
-WIFI_MODULE="$VER1_DIR/modules/comm_wifi/module.sh"
+WIFI_MODULE="$VER1_DIR/modules/comm_wifi/comm_wifi.sh"
 
 cat > "$TMPDIR/wifi_config.kv" << 'EOF'
 module.comm_wifi.iface=wlan0
@@ -94,7 +94,7 @@ bash "$WIFI_MODULE" probe --out "$TMPDIR/wifi_probe2" --cfg "$TMPDIR/wifi_config
 assert_eq "wifi probe missing" "false" "$(kv_read "$TMPDIR/wifi_probe2/probe.kv" "supports")"
 
 # --- comm_ble tests ---
-BLE_MODULE="$VER1_DIR/modules/comm_ble/module.sh"
+BLE_MODULE="$VER1_DIR/modules/comm_ble/comm_ble.sh"
 
 cat > "$TMPDIR/ble_config.kv" << 'EOF'
 module.comm_ble.scan_cycles=2

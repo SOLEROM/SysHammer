@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# comm_wifi/module.sh - ping/iperf3, RSSI, reconnect checks
+# comm_wifi/comm_wifi.sh - ping/iperf3, RSSI, reconnect checks
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,9 +23,9 @@ _parse_args() {
 
 cmd_help() {
     cat <<'EOF'
-comm_wifi/module.sh - Wi-Fi connectivity, RSSI, and throughput testing
+comm_wifi/comm_wifi.sh - Wi-Fi connectivity, RSSI, and throughput testing
 
-Usage: module.sh <command> [options]
+Usage: comm_wifi.sh <command> [options]
 
 Commands:
   probe       Check interface, iw/iwconfig, initial RSSI
@@ -48,9 +48,9 @@ Config keys (set in --cfg file):
   module.comm_wifi.rssi_warn_dbm  RSSI warning threshold in dBm (default: -75)
 
 Examples:
-  ./module.sh run --duration 20
-  ./module.sh probe
-  ./module.sh run --duration 10 --cfg my_config.kv
+  ./comm_wifi.sh run --duration 20
+  ./comm_wifi.sh probe
+  ./comm_wifi.sh run --duration 10 --cfg my_config.kv
 EOF
 }
 

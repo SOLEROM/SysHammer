@@ -127,7 +127,7 @@ run_stage_parallel() {
 
         (
             run_with_timeout "$tmo" \
-                bash "$MODULE_DIR/$member/module.sh" run \
+                bash "$MODULE_DIR/$member/$member.sh" run \
                     --out "$mod_dir" --duration "$dur" --cfg "$cfg_file" \
                 > "$mod_dir/stdout.log" 2> "$mod_dir/stderr.log"
         ) &
@@ -157,7 +157,7 @@ run_stage_parallel() {
         local mod_dir="$run_dir/modules/$member"
         local cfg_file="$run_dir/meta/config.kv"
         log_info "[$member] Evaluating"
-        bash "$MODULE_DIR/$member/module.sh" evaluate \
+        bash "$MODULE_DIR/$member/$member.sh" evaluate \
             --out "$mod_dir" --cfg "$cfg_file" 2>>"$mod_dir/stderr.log" || true
 
         score_module "$mod_dir"
@@ -171,7 +171,7 @@ run_stage_parallel() {
         local mod_dir="$run_dir/modules/$member"
         local cfg_file="$run_dir/meta/config.kv"
         log_debug "[$member] Cleaning up"
-        bash "$MODULE_DIR/$member/module.sh" cleanup \
+        bash "$MODULE_DIR/$member/$member.sh" cleanup \
             --out "$mod_dir" --cfg "$cfg_file" > "$mod_dir/cleanup.log" 2>&1 || true
     done
 
@@ -210,13 +210,13 @@ _run_module() {
     local run_rc=0
     if [[ "$DEBUG" == "1" ]]; then
         run_with_timeout "$tmo" \
-            bash "$MODULE_DIR/$member/module.sh" run \
+            bash "$MODULE_DIR/$member/$member.sh" run \
                 --out "$mod_dir" --duration "$dur" --cfg "$cfg_file" \
             > >(tee "$mod_dir/stdout.log" | sed "s/^/[$member] /" >&2) \
             2> >(tee "$mod_dir/stderr.log" | sed "s/^/[$member] /" >&2) || run_rc=$?
     else
         run_with_timeout "$tmo" \
-            bash "$MODULE_DIR/$member/module.sh" run \
+            bash "$MODULE_DIR/$member/$member.sh" run \
                 --out "$mod_dir" --duration "$dur" --cfg "$cfg_file" \
             > "$mod_dir/stdout.log" 2> "$mod_dir/stderr.log" || run_rc=$?
     fi
@@ -230,7 +230,7 @@ _run_module() {
 
     # Evaluate
     log_info "[$member] Evaluating"
-    bash "$MODULE_DIR/$member/module.sh" evaluate \
+    bash "$MODULE_DIR/$member/$member.sh" evaluate \
         --out "$mod_dir" --cfg "$cfg_file" 2>>"$mod_dir/stderr.log" || true
 
     # Score
@@ -238,7 +238,7 @@ _run_module() {
 
     # Cleanup
     log_debug "[$member] Cleaning up"
-    bash "$MODULE_DIR/$member/module.sh" cleanup \
+    bash "$MODULE_DIR/$member/$member.sh" cleanup \
         --out "$mod_dir" --cfg "$cfg_file" > "$mod_dir/cleanup.log" 2>&1 || true
 
     local mod_status
@@ -262,8 +262,8 @@ _probe_module() {
         return
     fi
 
-    if [[ ! -f "$MODULE_DIR/$member/module.sh" ]]; then
-        log_warn "[$member] Module file not found: $MODULE_DIR/$member/module.sh"
+    if [[ ! -f "$MODULE_DIR/$member/$member.sh" ]]; then
+        log_warn "[$member] Module file not found: $MODULE_DIR/$member/$member.sh"
         kv_write "$mod_dir/probe.kv" "supports" "false"
         kv_write "$mod_dir/probe.kv" "reason" "module not found"
         _PROBED_MODULES[$member]=1
@@ -271,7 +271,7 @@ _probe_module() {
     fi
 
     log_info "[$member] Probing"
-    bash "$MODULE_DIR/$member/module.sh" probe \
+    bash "$MODULE_DIR/$member/$member.sh" probe \
         --out "$mod_dir" --cfg "$cfg_file" 2>>"$mod_dir/stderr.log" || true
 
     _PROBED_MODULES[$member]=1

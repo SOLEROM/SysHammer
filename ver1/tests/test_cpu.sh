@@ -29,7 +29,7 @@ assert_eq() {
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
-MODULE="$VER1_DIR/modules/cpu/module.sh"
+MODULE="$VER1_DIR/modules/cpu/cpu.sh"
 
 # Create config kv
 cat > "$TMPDIR/config.kv" << 'EOF'

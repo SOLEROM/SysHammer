@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# comm_ble/module.sh - hcitool/bluetoothctl probe, scan stress
+# comm_ble/comm_ble.sh - hcitool/bluetoothctl probe, scan stress
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,9 +23,9 @@ _parse_args() {
 
 cmd_help() {
     cat <<'EOF'
-comm_ble/module.sh - BLE adapter scan stress testing
+comm_ble/comm_ble.sh - BLE adapter scan stress testing
 
-Usage: module.sh <command> [options]
+Usage: comm_ble.sh <command> [options]
 
 Commands:
   probe       Check for hcitool/bluetoothctl and BLE adapter
@@ -45,9 +45,9 @@ Config keys (set in --cfg file):
   module.comm_ble.scan_cycles    Number of scan cycles to run (default: 5)
 
 Examples:
-  ./module.sh run --duration 20
-  ./module.sh probe
-  ./module.sh run --duration 10 --cfg my_config.kv
+  ./comm_ble.sh run --duration 20
+  ./comm_ble.sh probe
+  ./comm_ble.sh run --duration 10 --cfg my_config.kv
 EOF
 }
 

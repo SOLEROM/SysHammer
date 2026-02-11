@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# memory/module.sh - stress-ng vm workers module
+# memory/memory.sh - stress-ng vm workers module
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,9 +23,9 @@ _parse_args() {
 
 cmd_help() {
     cat <<'EOF'
-memory/module.sh - Memory stress testing via stress-ng VM workers
+memory/memory.sh - Memory stress testing via stress-ng VM workers
 
-Usage: module.sh <command> [options]
+Usage: memory.sh <command> [options]
 
 Commands:
   probe       Check if stress-ng is available and report memory info
@@ -45,9 +45,9 @@ Config keys (set in --cfg file):
   module.memory.vm_bytes   Memory allocation per worker (default: 80%)
 
 Examples:
-  ./module.sh run --duration 60
-  ./module.sh probe
-  ./module.sh run --duration 30 --cfg my_config.kv
+  ./memory.sh run --duration 60
+  ./memory.sh probe
+  ./memory.sh run --duration 30 --cfg my_config.kv
 EOF
 }
 

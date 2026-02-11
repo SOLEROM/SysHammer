@@ -36,8 +36,8 @@ cleanup_all() {
         fi
 
         # Call module cleanup if available
-        if [[ -n "$MODULE_DIR" && -f "$MODULE_DIR/$module/module.sh" ]]; then
-            bash "$MODULE_DIR/$module/module.sh" cleanup \
+        if [[ -n "$MODULE_DIR" && -f "$MODULE_DIR/$module/$module.sh" ]]; then
+            bash "$MODULE_DIR/$module/$module.sh" cleanup \
                 --out "$mod_dir" --cfg "${cfg_file:-/dev/null}" \
                 >> "$mod_dir/cleanup.log" 2>&1 || true
         fi

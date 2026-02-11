@@ -29,7 +29,7 @@ assert_eq() {
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
-MODULE="$VER1_DIR/modules/memory/module.sh"
+MODULE="$VER1_DIR/modules/memory/memory.sh"
 
 cat > "$TMPDIR/config.kv" << 'EOF'
 module.memory.workers=1

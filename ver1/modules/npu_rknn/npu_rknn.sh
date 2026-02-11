@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# gpu/module.sh - Placeholder (always skip unless explicitly enabled)
+# npu_rknn/npu_rknn.sh - Placeholder (always skip unless explicitly enabled)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,12 +20,12 @@ _parse_args() {
 
 cmd_help() {
     cat <<'EOF'
-gpu/module.sh - GPU stress testing (placeholder)
+npu_rknn/npu_rknn.sh - Rockchip NPU RKNN stress testing (placeholder)
 
 This module is a placeholder and is not implemented in v1.
 It always reports as unsupported during probe.
 
-Usage: module.sh <command> [options]
+Usage: npu_rknn.sh <command> [options]
 
 Commands:
   probe       Always reports unsupported
@@ -48,12 +48,12 @@ cmd_probe() {
     local probe_file="$OUT_DIR/probe.kv"
     : > "$probe_file"
     kv_write "$probe_file" "supports" "false"
-    kv_write "$probe_file" "reason" "GPU module is a placeholder - not implemented in v1"
+    kv_write "$probe_file" "reason" "NPU RKNN module is a placeholder - not implemented in v1"
 }
 
-cmd_run()      { _parse_args "$@"; _standalone_defaults 30; echo "gpu: placeholder, nothing to run"; }
-cmd_evaluate() { _parse_args "$@"; _standalone_defaults 30; echo "gpu: placeholder, nothing to evaluate"; }
-cmd_cleanup()  { _parse_args "$@"; _standalone_defaults 30; echo "gpu: placeholder, nothing to cleanup"; }
+cmd_run()      { _parse_args "$@"; _standalone_defaults 30; echo "npu_rknn: placeholder, nothing to run"; }
+cmd_evaluate() { _parse_args "$@"; _standalone_defaults 30; echo "npu_rknn: placeholder, nothing to evaluate"; }
+cmd_cleanup()  { _parse_args "$@"; _standalone_defaults 30; echo "npu_rknn: placeholder, nothing to cleanup"; }
 
 case "${1:-}" in
     probe)    shift; cmd_probe "$@" ;;
