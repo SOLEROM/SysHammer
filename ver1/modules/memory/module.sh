@@ -15,13 +15,45 @@ _parse_args() {
             --out)      OUT_DIR="$2"; shift 2 ;;
             --duration) DURATION="$2"; shift 2 ;;
             --cfg)      CFG_FILE="$2"; shift 2 ;;
+            --help|-h)  cmd_help; exit 0 ;;
             *)          shift ;;
         esac
     done
 }
 
+cmd_help() {
+    cat <<'EOF'
+memory/module.sh - Memory stress testing via stress-ng VM workers
+
+Usage: module.sh <command> [options]
+
+Commands:
+  probe       Check if stress-ng is available and report memory info
+  run         Execute memory stress test
+  evaluate    Analyze results and determine pass/warn/fail
+  cleanup     Terminate any leftover processes
+  help        Show this help
+
+Options:
+  --out <dir>       Output directory for results (default: auto temp dir)
+  --duration <sec>  Test duration in seconds (default: 30)
+  --cfg <file>      Config file in key=value format (default: built-in defaults)
+  --help, -h        Show this help
+
+Config keys (set in --cfg file):
+  module.memory.workers    Number of VM stress workers (default: 1)
+  module.memory.vm_bytes   Memory allocation per worker (default: 80%)
+
+Examples:
+  ./module.sh run --duration 60
+  ./module.sh probe
+  ./module.sh run --duration 30 --cfg my_config.kv
+EOF
+}
+
 cmd_probe() {
     _parse_args "$@"
+    _standalone_defaults 30
     local probe_file="$OUT_DIR/probe.kv"
     : > "$probe_file"
 
@@ -42,6 +74,7 @@ cmd_probe() {
 
 cmd_run() {
     _parse_args "$@"
+    _standalone_defaults 30
     local workers vm_bytes
     workers=$(kv_read "$CFG_FILE" "module.memory.workers" "1")
     vm_bytes=$(kv_read "$CFG_FILE" "module.memory.vm_bytes" "80%")
@@ -57,6 +90,7 @@ cmd_run() {
 
 cmd_evaluate() {
     _parse_args "$@"
+    _standalone_defaults 30
     local result_file="$OUT_DIR/result.kv"
     local fails_file="$OUT_DIR/fails.kv"
     : > "$fails_file"
@@ -85,6 +119,7 @@ cmd_evaluate() {
 
 cmd_cleanup() {
     _parse_args "$@"
+    _standalone_defaults 30
     echo "memory cleanup: no persistent state"
     if [[ -f "$OUT_DIR/pids.kv" ]]; then
         while IFS='=' read -r _k pid; do
@@ -98,5 +133,6 @@ case "${1:-}" in
     run)      shift; cmd_run "$@" ;;
     evaluate) shift; cmd_evaluate "$@" ;;
     cleanup)  shift; cmd_cleanup "$@" ;;
-    *)        echo "Usage: $0 {probe|run|evaluate|cleanup} --out <dir> [--duration <s>] --cfg <kv>" >&2; exit 1 ;;
+    help|--help|-h) cmd_help ;;
+    *)        cmd_help; exit 1 ;;
 esac

@@ -10,21 +10,53 @@ source "${SCRIPT_DIR}/../../lib/common.sh"
 
 # Parse common arguments
 _parse_args() {
-    OUT_DIR=""
-    DURATION=""
-    CFG_FILE=""
+    OUT_DIR=""; DURATION=""; CFG_FILE=""
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --out)      OUT_DIR="$2"; shift 2 ;;
             --duration) DURATION="$2"; shift 2 ;;
             --cfg)      CFG_FILE="$2"; shift 2 ;;
+            --help|-h)  cmd_help; exit 0 ;;
             *)          shift ;;
         esac
     done
 }
 
+cmd_help() {
+    cat <<'EOF'
+cpu/module.sh - CPU stress testing via stress-ng
+
+Usage: module.sh <command> [options]
+
+Commands:
+  probe       Check if stress-ng is available
+  run         Execute CPU stress test
+  evaluate    Analyze results and determine pass/warn/fail
+  cleanup     Terminate any leftover processes
+  help        Show this help
+
+Options:
+  --out <dir>       Output directory for results (default: auto temp dir)
+  --duration <sec>  Test duration in seconds (default: 30)
+  --cfg <file>      Config file in key=value format (default: built-in defaults)
+  --help, -h        Show this help
+
+Config keys (set in --cfg file):
+  module.cpu.workers       Number of CPU stress workers, 0 = nproc (default: nproc)
+  module.cpu.method        stress-ng stressor method (default: cpu)
+  module.cpu.temp_warn_c   Temperature warning threshold in C (default: 80)
+  module.cpu.temp_fail_c   Temperature failure threshold in C (default: 95)
+
+Examples:
+  ./module.sh run --duration 60
+  ./module.sh probe
+  ./module.sh run --duration 30 --cfg my_config.kv
+EOF
+}
+
 cmd_probe() {
     _parse_args "$@"
+    _standalone_defaults 30
     local probe_file="$OUT_DIR/probe.kv"
     : > "$probe_file"
 
@@ -41,6 +73,7 @@ cmd_probe() {
 
 cmd_run() {
     _parse_args "$@"
+    _standalone_defaults 30
     local workers
     workers=$(kv_read "$CFG_FILE" "module.cpu.workers" "$(nproc 2>/dev/null || echo 1)")
     local method
@@ -58,6 +91,7 @@ cmd_run() {
 
 cmd_evaluate() {
     _parse_args "$@"
+    _standalone_defaults 30
     local result_file="$OUT_DIR/result.kv"
     local fails_file="$OUT_DIR/fails.kv"
     : > "$fails_file"
@@ -116,6 +150,7 @@ cmd_evaluate() {
 
 cmd_cleanup() {
     _parse_args "$@"
+    _standalone_defaults 30
     echo "cpu cleanup: no persistent state"
     # Kill any recorded PIDs
     if [[ -f "$OUT_DIR/pids.kv" ]]; then
@@ -131,5 +166,6 @@ case "${1:-}" in
     run)      shift; cmd_run "$@" ;;
     evaluate) shift; cmd_evaluate "$@" ;;
     cleanup)  shift; cmd_cleanup "$@" ;;
-    *)        echo "Usage: $0 {probe|run|evaluate|cleanup} --out <dir> [--duration <s>] --cfg <kv>" >&2; exit 1 ;;
+    help|--help|-h) cmd_help ;;
+    *)        cmd_help; exit 1 ;;
 esac

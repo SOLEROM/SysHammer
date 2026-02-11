@@ -15,13 +15,45 @@ _parse_args() {
             --out)      OUT_DIR="$2"; shift 2 ;;
             --duration) DURATION="$2"; shift 2 ;;
             --cfg)      CFG_FILE="$2"; shift 2 ;;
+            --help|-h)  cmd_help; exit 0 ;;
             *)          shift ;;
         esac
     done
 }
 
+cmd_help() {
+    cat <<'EOF'
+bus_spi/module.sh - SPI loopback transaction testing via spidev_test
+
+Usage: module.sh <command> [options]
+
+Commands:
+  probe       Check if SPI device is configured and spidev_test exists
+  run         Execute SPI loopback transactions
+  evaluate    Analyze transfer results for errors
+  cleanup     No persistent state to clean
+  help        Show this help
+
+Options:
+  --out <dir>       Output directory for results (default: auto temp dir)
+  --duration <sec>  Test duration in seconds (default: 30)
+  --cfg <file>      Config file in key=value format (default: built-in defaults)
+  --help, -h        Show this help
+
+Config keys (set in --cfg file):
+  module.bus_spi.device       SPI device path, required (default: "")
+  module.bus_spi.speed        SPI clock speed in Hz (default: 1000000)
+  module.bus_spi.iterations   Number of transfer iterations (default: 100)
+
+Examples:
+  ./module.sh probe --cfg my_config.kv
+  ./module.sh run --duration 10 --cfg my_config.kv
+EOF
+}
+
 cmd_probe() {
     _parse_args "$@"
+    _standalone_defaults 30
     local probe_file="$OUT_DIR/probe.kv"
     : > "$probe_file"
 
@@ -52,6 +84,7 @@ cmd_probe() {
 
 cmd_run() {
     _parse_args "$@"
+    _standalone_defaults 30
     local device speed iterations
     device=$(kv_read "$CFG_FILE" "module.bus_spi.device" "/dev/spidev0.0")
     speed=$(kv_read "$CFG_FILE" "module.bus_spi.speed" "1000000")
@@ -70,6 +103,7 @@ cmd_run() {
 
 cmd_evaluate() {
     _parse_args "$@"
+    _standalone_defaults 30
     local result_file="$OUT_DIR/result.kv"
     local fails_file="$OUT_DIR/fails.kv"
     : > "$fails_file"
@@ -93,6 +127,7 @@ cmd_evaluate() {
 
 cmd_cleanup() {
     _parse_args "$@"
+    _standalone_defaults 30
     echo "bus_spi cleanup: no persistent state"
 }
 
@@ -101,5 +136,6 @@ case "${1:-}" in
     run)      shift; cmd_run "$@" ;;
     evaluate) shift; cmd_evaluate "$@" ;;
     cleanup)  shift; cmd_cleanup "$@" ;;
-    *)        echo "Usage: $0 {probe|run|evaluate|cleanup} --out <dir> [--duration <s>] --cfg <kv>" >&2; exit 1 ;;
+    help|--help|-h) cmd_help ;;
+    *)        cmd_help; exit 1 ;;
 esac

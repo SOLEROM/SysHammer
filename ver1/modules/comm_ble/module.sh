@@ -15,13 +15,45 @@ _parse_args() {
             --out)      OUT_DIR="$2"; shift 2 ;;
             --duration) DURATION="$2"; shift 2 ;;
             --cfg)      CFG_FILE="$2"; shift 2 ;;
+            --help|-h)  cmd_help; exit 0 ;;
             *)          shift ;;
         esac
     done
 }
 
+cmd_help() {
+    cat <<'EOF'
+comm_ble/module.sh - BLE adapter scan stress testing
+
+Usage: module.sh <command> [options]
+
+Commands:
+  probe       Check for hcitool/bluetoothctl and BLE adapter
+  run         Execute BLE scan stress cycles
+  evaluate    Analyze scan results and log events
+  cleanup     Terminate any leftover processes
+  help        Show this help
+
+Options:
+  --out <dir>       Output directory for results (default: auto temp dir)
+  --duration <sec>  Test duration in seconds (default: 30)
+  --cfg <file>      Config file in key=value format (default: built-in defaults)
+  --help, -h        Show this help
+
+Config keys (set in --cfg file):
+  module.comm_ble.hci_dev        HCI device name (default: hci0)
+  module.comm_ble.scan_cycles    Number of scan cycles to run (default: 5)
+
+Examples:
+  ./module.sh run --duration 20
+  ./module.sh probe
+  ./module.sh run --duration 10 --cfg my_config.kv
+EOF
+}
+
 cmd_probe() {
     _parse_args "$@"
+    _standalone_defaults 30
     local probe_file="$OUT_DIR/probe.kv"
     : > "$probe_file"
 
@@ -53,6 +85,7 @@ cmd_probe() {
 
 cmd_run() {
     _parse_args "$@"
+    _standalone_defaults 30
     local scan_cycles
     scan_cycles=$(kv_read "$CFG_FILE" "module.comm_ble.scan_cycles" "5")
 
@@ -76,6 +109,7 @@ cmd_run() {
 
 cmd_evaluate() {
     _parse_args "$@"
+    _standalone_defaults 30
     local result_file="$OUT_DIR/result.kv"
     local fails_file="$OUT_DIR/fails.kv"
     : > "$fails_file"
@@ -99,6 +133,7 @@ cmd_evaluate() {
 
 cmd_cleanup() {
     _parse_args "$@"
+    _standalone_defaults 30
     echo "comm_ble cleanup: no persistent state"
     if [[ -f "$OUT_DIR/pids.kv" ]]; then
         while IFS='=' read -r _k pid; do
@@ -108,9 +143,10 @@ cmd_cleanup() {
 }
 
 case "${1:-}" in
-    probe)    shift; cmd_probe "$@" ;;
-    run)      shift; cmd_run "$@" ;;
-    evaluate) shift; cmd_evaluate "$@" ;;
-    cleanup)  shift; cmd_cleanup "$@" ;;
-    *)        echo "Usage: $0 {probe|run|evaluate|cleanup} --out <dir> [--duration <s>] --cfg <kv>" >&2; exit 1 ;;
+    probe)        shift; cmd_probe "$@" ;;
+    run)          shift; cmd_run "$@" ;;
+    evaluate)     shift; cmd_evaluate "$@" ;;
+    cleanup)      shift; cmd_cleanup "$@" ;;
+    help|--help|-h) cmd_help ;;
+    *)            cmd_help; exit 1 ;;
 esac

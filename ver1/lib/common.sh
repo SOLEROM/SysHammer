@@ -39,6 +39,25 @@ log_debug() { _log DEBUG "$@"; }
 log_error() { _log ERROR "$@"; }
 log_warn()  { _log WARN  "$@"; }
 
+# --- Standalone Module Helpers ---
+
+# Apply defaults for standalone module execution.
+# Call after _parse_args. Creates temp out dir and sets defaults if not provided.
+_standalone_defaults() {
+    local default_duration="${1:-30}"
+    if [[ -z "$OUT_DIR" ]]; then
+        OUT_DIR=$(mktemp -d "/tmp/syshammer_XXXXXX")
+        echo "Output directory: $OUT_DIR"
+    fi
+    mkdir -p "$OUT_DIR"
+    if [[ -z "$DURATION" ]]; then
+        DURATION="$default_duration"
+    fi
+    if [[ -z "$CFG_FILE" ]]; then
+        CFG_FILE="/dev/null"
+    fi
+}
+
 # --- Key-Value File Operations ---
 
 # Write key=value to file. If key exists, overwrite it; otherwise append.

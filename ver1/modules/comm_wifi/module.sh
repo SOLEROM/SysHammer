@@ -15,13 +15,48 @@ _parse_args() {
             --out)      OUT_DIR="$2"; shift 2 ;;
             --duration) DURATION="$2"; shift 2 ;;
             --cfg)      CFG_FILE="$2"; shift 2 ;;
+            --help|-h)  cmd_help; exit 0 ;;
             *)          shift ;;
         esac
     done
 }
 
+cmd_help() {
+    cat <<'EOF'
+comm_wifi/module.sh - Wi-Fi connectivity, RSSI, and throughput testing
+
+Usage: module.sh <command> [options]
+
+Commands:
+  probe       Check interface, iw/iwconfig, initial RSSI
+  run         Execute ping, RSSI check, and optional iperf3 test
+  evaluate    Analyze packet loss, RSSI levels, reconnect events
+  cleanup     Terminate any leftover processes
+  help        Show this help
+
+Options:
+  --out <dir>       Output directory for results (default: auto temp dir)
+  --duration <sec>  Test duration in seconds (default: 30)
+  --cfg <file>      Config file in key=value format (default: built-in defaults)
+  --help, -h        Show this help
+
+Config keys (set in --cfg file):
+  module.comm_wifi.iface          Wireless interface (default: wlan0)
+  module.comm_wifi.target         Ping target IP/hostname (default: 8.8.8.8)
+  module.comm_wifi.iperf_server   iperf3 server address, empty to skip (default: "")
+  module.comm_wifi.max_loss_pct   Max acceptable packet loss percent (default: 10)
+  module.comm_wifi.rssi_warn_dbm  RSSI warning threshold in dBm (default: -75)
+
+Examples:
+  ./module.sh run --duration 20
+  ./module.sh probe
+  ./module.sh run --duration 10 --cfg my_config.kv
+EOF
+}
+
 cmd_probe() {
     _parse_args "$@"
+    _standalone_defaults 30
     local probe_file="$OUT_DIR/probe.kv"
     : > "$probe_file"
 
@@ -66,6 +101,7 @@ cmd_probe() {
 
 cmd_run() {
     _parse_args "$@"
+    _standalone_defaults 30
     local iface target iperf_server
     iface=$(kv_read "$CFG_FILE" "module.comm_wifi.iface" "wlan0")
     target=$(kv_read "$CFG_FILE" "module.comm_wifi.target" "8.8.8.8")
@@ -95,6 +131,7 @@ cmd_run() {
 
 cmd_evaluate() {
     _parse_args "$@"
+    _standalone_defaults 30
     local result_file="$OUT_DIR/result.kv"
     local fails_file="$OUT_DIR/fails.kv"
     : > "$fails_file"
@@ -140,6 +177,7 @@ cmd_evaluate() {
 
 cmd_cleanup() {
     _parse_args "$@"
+    _standalone_defaults 30
     echo "comm_wifi cleanup: no persistent state"
     if [[ -f "$OUT_DIR/pids.kv" ]]; then
         while IFS='=' read -r _k pid; do
@@ -149,9 +187,10 @@ cmd_cleanup() {
 }
 
 case "${1:-}" in
-    probe)    shift; cmd_probe "$@" ;;
-    run)      shift; cmd_run "$@" ;;
-    evaluate) shift; cmd_evaluate "$@" ;;
-    cleanup)  shift; cmd_cleanup "$@" ;;
-    *)        echo "Usage: $0 {probe|run|evaluate|cleanup} --out <dir> [--duration <s>] --cfg <kv>" >&2; exit 1 ;;
+    probe)        shift; cmd_probe "$@" ;;
+    run)          shift; cmd_run "$@" ;;
+    evaluate)     shift; cmd_evaluate "$@" ;;
+    cleanup)      shift; cmd_cleanup "$@" ;;
+    help|--help|-h) cmd_help ;;
+    *)            cmd_help; exit 1 ;;
 esac
